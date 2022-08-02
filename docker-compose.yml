@@ -1,0 +1,201 @@
+version: '3.5'
+
+services:
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: app/Dockerfile
+  #   container_name: profile-container
+  #   command: python app/app.py
+  #   ports:
+  #     - "8080:8080"
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #       - ./app:/code/app
+  #   depends_on:
+  #     - mongodb
+
+  auth:
+    container_name: auth
+    build:
+      context: .
+      dockerfile: ./auth_micro/Dockerfile
+    command: uvicorn main2:app --reload --host 0.0.0.0 --port 8080
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./app:/code/app
+
+  # redis_db:
+  #   image: redis:6.2.6-alpine
+  #   ports:
+  #     - 6379:6379
+
+
+  mongodb:
+    image: mongo:4.4.7-focal
+    container_name: mongodb
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 27017:27017
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo mongodb:27017/flame-profile --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  db:
+    container_name: pg_container
+    image: postgres:13.3-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${PG_USERNAME}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
+    ports:
+      - ${PG_PORT}:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4:5.7
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+  zookeeper:
+    image: 'bitnami/zookeeper:3.7.0'
+    container_name: zookeeper
+    ports:
+      - '2181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - ./bitnami/zookeeper:/bitnami/zookeeper
+
+  kafka:
+    image: 'bitnami/kafka:2.8.0'
+    container_name: kafka
+    ports:
+      - "9093:9093"
+    expose:
+      - "9093"
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CREATE_TOPICS="kafka_capstone_event_bus:1:1"
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./bitnami/kafka:/bitnami/kafka
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:9092"
+      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    depends_on:
+      - kafka
+
+  rmq:
+    image: rabbitmq:3.8-management
+    container_name: rabbit
+    ports:
+      - 5672:5672
+      - 15672:15672
+    restart: "no"
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   ports:
+  #     - ${PROMETHEUS_PORT}:9090
+  #   volumes:
+  #     - ./prometheusconfig/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   user: root
+  #   restart: unless-stopped
+  #   container_name: grafana
+  #   ports:
+  #     - ${GRAFANA_PORT}:3000
+  #   volumes:
+  #     - ./grafana-data/data:/var/lib/grafana
+  #     - ./grafana-data/certs:/certs
+  #     - ./grafana/provisioning:/etc/grafana/provisioning
+  #     - ./grafana/dashboards:/var/lib/grafana/dashboards
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  # kafka:
+  #    image: confluentinc/cp-kafka:${CONFLUENT_VERSION}
+  #    depends_on:
+  #      - zookeeper
+  #    ports:
+  #      - ${KAFKA_PORT}:9092
+  #      - ${KAFKA_LOCALHOST_PORT}:9093
+  #    environment:
+  #      KAFKA_BROKER_ID: 1
+  #      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,PLAINTEXT://0.0.0.0:9093
+  #      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+  #      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,PLAINTEXT://localhost:9093
+  #      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  #      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+  #      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
+  #      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+  #      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+  #      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+  #      KAFKA_MESSAGE_MAX_BYTES: 10485760
+  #      KAFKA_SOCKET_REQUEST_MAX_BYTES: 100001200
+  #    restart: always
+  #    volumes:
+  #      - ./kafka-data:/var/lib/kafka/data
+
+  #  zookeeper:
+  #    image: zookeeper:${ZK_VERSION}
+  #    ports:
+  #      - ${ZK_PORT}:2181
+  #    restart: always
+  #    volumes:
+  #      - ./zk-data:/var/lib/zookeeper/data \
+  #      - ./zk-txn-logs:/var/lib/zookeeper/log \
+
+  #  kafka-actualizer:
+  #    image: confluentinc/cp-kafka:${CONFLUENT_VERSION}
+  #    depends_on:
+  #      - kafka
+  #    volumes:
+  #      - ./docker/wait-for-it.sh:/wait-for-it.sh
+  #    command: |
+  #      bash -c '/wait-for-it.sh --timeout=0 -s kafka:9092 && \
+  #      kafka-topics --create --if-not-exists --topic src-data --partitions 8 --replication-factor 1 --zookeeper zookeeper:2181 && \
+  #      kafka-topics --create --if-not-exists --topic processed-data --partitions 8 --replication-factor 1 --zookeeper zookeeper:2181 && \
+  #      kafka-topics --create --if-not-exists --topic aggregated-data --partitions 8 --replication-factor 1 --zookeeper zookeeper:2181 && \
+  #      exit 0'
+  #    environment:
+  #      KAFKA_BROKER_ID: ignored
+  #      KAFKA_ZOOKEEPER_CONNECT: ignored
