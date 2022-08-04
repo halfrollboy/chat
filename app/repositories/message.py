@@ -13,7 +13,7 @@ from ..db.postgres.dependencies import get_db
 from loguru import logger
 
 
-class CompanyRepository:
+class MessageRepository:
     def __init__(self, db: Session = Depends(get_db)):
         self.db = db
 

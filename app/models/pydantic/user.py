@@ -1,26 +1,34 @@
 from pydantic import BaseModel, EmailStr, ValidationError, validator
+from enum import Enum
+
+
+class GenderType(Enum):
+    MALE = "male"
+    FEMALE = "female"
+    OTHER = "other"
 
 
 class UserBase(BaseModel):
     """Model for client"""
 
     username: str
-    full_name: str | None = None
+    firstname: str | None = None
+    lastname: str | None = None
+    middlename: str | None = None
     disabled: bool | None = None
 
     class Config:
         schema_extra = {
             "example": {
-                "username": "Barry Allen",
+                "username": "@boogeyman",
                 "email": "barry.allen@starlabs.com",
-                "full_name": "Piter Parker",
+                "firstname": "Piter",
+                "lastname": " Parker",
                 "phone": "+79210707568",
-                # "disabled": True,
             }
         }
 
 
-# from loguru import logger
 class UserCred(UserBase):
     email: EmailStr
     phone: str | None = None

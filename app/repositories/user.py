@@ -5,7 +5,7 @@ from fastapi.params import Depends
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
-from app.models.pydantic.user import UserCreate
+from ..models.pydantic.user import UserCreate
 
 from ..models.postgres.pg_models import User
 from ..db.postgres.dependencies import get_db
@@ -43,7 +43,9 @@ class UserRepository:
         try:
             db_user = User(
                 username=user.username,
-                fullname=user.full_name,
+                firstname=user.firstname,
+                lastname=user.lastname,
+                middlename=user.middlename,
                 password=faked_pass_hash,
                 email=user.email,
                 phone=user.phone,

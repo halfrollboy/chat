@@ -1,32 +1,70 @@
 from email.policy import default
 from faulthandler import disable
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Enum
+from typing import List
+from h11 import Data
+from sqlalchemy import (
+    ARRAY,
+    Column,
+    String,
+    Integer,
+    Boolean,
+    ForeignKey,
+    Enum,
+    DateTime,
+)
+from sqlalchemy.ext.mutable import MutableList
 import enum
+from sqlalchemy.sql import func
+import datetime
 from ...db.postgres.database import Model
-from uuid import UUID
+from uuid import UUID, uuid4
+from ...models.pydantic.chat import ChatType
+from ...models.pydantic.user import GenderType
 
 
-class Chat_type(enum.Enum):
-    # global = 1
-    avatar = 2
-    personal = 3
-    grpup = 4
+class Messages(Model):
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True)
+    chat_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    reply_to = Column(Integer)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    edited_at = Column(DateTime(timezone=True), onupdate=func.now())
+    content = Column(String)
+    attachment = Column(MutableList.as_mutable(ARRAY(UUID)), unique=False)
+
 
 class Chats(Model):
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    __tablename__ = "chats"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(200))
-    type = Column()
+    type = Column(ChatType)
+    title = Column(String)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    discription = Column(String)
+    photo_uri = Column(String)
+    default_permissions = Column(String(200))
+    owner_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
 
 
 class User(Model):
     __tablename__ = "user"
     id = Column(Integer, primary_key=True)
     username = Column(String(200), unique=True)
-    fullname = Column(String(200))
+    firstname = Column(String(200))
+    lastname = Column(String(200))
+    middlname = Column(String(200))
+    gender = Column(GenderType)
+    birthday = Column(DateTime)
+    photo_uri = Column(String)
+    join_date = Column(DateTime)
+    is_online = Column(Boolean)
+    last_seen = Column(DateTime)  # Точно ли
+
+    # Пока оставлю так чтобы была какая-то регистрация
     password = Column(String(200))
     email = Column(String, unique=True, index=True)
     phone = Column(String, unique=True)
-    # disabled = Column(Boolean)
 
 
 class Company(Model):

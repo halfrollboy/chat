@@ -1,32 +1,30 @@
 from pydantic import BaseModel, EmailStr, Field
-from uuid import uuid4, UUID
+import uuid
 import datetime
-from typing import List
 from enum import Enum
 
 
-class MessageType(Enum):
+class ChatType(Enum):
     GLOBAL = "gloabal"
     AVATAR = "avatar"
     PERSONAL = "personal"
     GROUP = "group"
 
 
-class MessageBase(BaseModel):
-    "Базовая модель сообщений"
-    chat_id = UUID
-    user_id = UUID
-    reply_to = int
+class ChatBase(BaseModel):
+    name = str
+    type = ChatType
+    title = str
     created_at = datetime.datetime
-    edited_at = datetime.datetime
-    content = str
-    attachment = List[UUID]
+    discription = str
+    photo_uri = str
+    default_permissions = str
+    owner_id = uuid.uuid4
 
     class Config:
         schema_extra = {
             "example": {
-                "chat_id": "e93e61ad-70a3-46c0-a377-8c5055f0c022",
-                "user_id": "",
+                "name": "Avatar chat 1",
                 "type": "personal",
                 "title": "Это супер новый чат для распродаж",
                 "created_at": datetime.datetime.now(),
@@ -38,15 +36,15 @@ class MessageBase(BaseModel):
         }
 
 
-class Message(MessageBase):
-    id: int
+class Chat(ChatBase):
+    id: uuid.UUID
 
     class Config:
         orm_mode = True  # TL;DR; помогает связать модель со схемой
 
         schema_extra = {
             "example": {
-                **MessageBase.Config.schema_extra.get("example"),
-                "id": "1",
+                **ChatBase.Config.schema_extra.get("example"),
+                "id": "e93e61ad-70a3-46c0-a377-8c5055f0c022",
             }
         }
