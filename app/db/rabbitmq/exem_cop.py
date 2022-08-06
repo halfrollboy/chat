@@ -87,12 +87,22 @@ class ExamplePublisher(object):
         self.open_channel()
 
     def on_connection_open_error(self, _unused_connection, err):
-        """Метод для обработки ошибок"""
+        """This method is called by pika if the connection to RabbitMQ
+        can't be established.
+        :param pika.SelectConnection _unused_connection: The connection
+        :param Exception err: The error
+        """
         LOGGER.error("Connection open failed, reopening in 5 seconds: %s", err)
         self._connection.ioloop.call_later(5, self._connection.ioloop.stop)
 
     def on_connection_closed(self, _unused_connection, reason):
-        """Остановка всего в рэббите"""
+        """This method is invoked by pika when the connection to RabbitMQ is
+        closed unexpectedly. Since it is unexpected, we will reconnect to
+        RabbitMQ if it disconnects.
+        :param pika.connection.Connection connection: The closed connection obj
+        :param Exception reason: exception representing reason for loss of
+            connection.
+        """
         self._channel = None
         if self._stopping:
             self._connection.ioloop.stop()
@@ -282,9 +292,7 @@ class ExamplePublisher(object):
         )
 
     def schedule_next_message(self):
-        """If we are not closing our connection to RabbitMQ, schedule another
-        message to be delivered in PUBLISH_INTERVAL seconds.
-        """
+        # Отправляет сообщение только спустя некоторое время
         LOGGER.info("Scheduling next message for %0.1f seconds", self.PUBLISH_INTERVAL)
         self._connection.ioloop.call_later(self.PUBLISH_INTERVAL, self.publish_message)
 
@@ -345,13 +353,6 @@ class ExamplePublisher(object):
         LOGGER.info("Stopped")
 
     def stop(self):
-        """Stop the example by closing the channel and connection. We
-        set a flag here so that we stop scheduling new messages to be
-        published. The IOLoop is started because this method is
-        invoked by the Try/Catch below when KeyboardInterrupt is caught.
-        Starting the IOLoop again will allow the publisher to cleanly
-        disconnect from RabbitMQ.
-        """
         LOGGER.info("Stopping")
         self._stopping = True
         self.close_channel()
@@ -373,10 +374,7 @@ class ExamplePublisher(object):
 
 
 def main():
-    # logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
     logging.basicConfig(level=logging_level, format=LOG_FORMAT)
-
-    # Connect to localhost:5672 as guest with the password guest and virtual host "/" (%2F)
     example = ExamplePublisher(
         "amqp://"
         + username
