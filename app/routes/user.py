@@ -41,3 +41,13 @@ async def get_user(user_id: int, users: UserRepository = Depends()):
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return User.from_orm(db_user)
+
+
+@router_user.get("/online/{user_id}")
+async def online(user_id):
+    pass
+
+
+@router_user.get("/ofline/{user_id}")
+async def online(user_id):
+    pass
