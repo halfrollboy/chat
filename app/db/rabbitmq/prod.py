@@ -74,17 +74,15 @@ class Produser(Rabbit):
         pass
 
     async def send_message_to_channel(self, message, routing_key):
-        async with self.conn:
-            # while True:
-            print(f"Send msg")
-            # Sending the message
-            await self._channel.default_exchange.publish(
-                message,
-                routing_key=routing_key,
-            )
+        print(f"Send msg")
+        # Sending the message
+        await self._channel.default_exchange.publish(
+            message,
+            routing_key=routing_key,
+        )
 
-            print(f" [x] Sent {message!r}")
-            time.sleep(3)
+        print(f" [x] Sent {message!r}")
+        time.sleep(3)
 
 
 async def main():

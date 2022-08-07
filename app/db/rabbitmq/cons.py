@@ -46,19 +46,19 @@ class Consumer(Rabbit):
 
     async def wait_message_to_channel(self, queue):
         print("wait now")
-        async with self.conn:
-            # Отправляет максимум 10 сообещний
-            # await self._channel.set_qos(prefetch_count=10)
-            print("wel")
-            async with queue.iterator() as queue_iter:
-                async for message in queue_iter:
-                    self.on_message(message=message)
-                    print("mes")
-                    async with message.process():
-                        print("MESSAGE BODY", message.body)
+        # async with self.conn:
+        # Отправляет максимум 10 сообещний
+        await self._channel.set_qos(prefetch_count=10)
+        print("wel")
+        async with queue.iterator() as queue_iter:
+            async for message in queue_iter:
+                await self.on_message(message=message)
+                print("mes")
+                async with message.process(ignore_processed=True):
+                    print("MESSAGE BODY", message.body)
 
-                        if queue.name in message.body.decode():
-                            print("УРААААА", queue.name)
+                    if queue.name in message.body.decode():
+                        print("УРААААА", queue.name)
 
     async def on_message(self, message):
         await asyncio.sleep(message.body.count(b"."))
