@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI, APIRouter
 from sse_starlette import EventSourceResponse
 
-router_message = APIRouter(
+router_chat = APIRouter(
     prefix="/chats",
     tags=["chats"],
     # dependencies=[Depends(get_token_handler)],

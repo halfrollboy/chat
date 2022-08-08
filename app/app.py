@@ -5,12 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 from .db.postgres.database import Model, engine
-from .routes.employee import router_employee
-from .routes.company import router_company
+from .routes.chat import router_chat
 from .routes.user import router_user
-from .routes.message import router_message
-from .modules.auth.auth import get_auth
-
 
 # import os
 from loguru import logger
@@ -19,10 +15,8 @@ Model.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
-app.include_router(router_employee)
-app.include_router(router_company)
 app.include_router(router_user)
-app.include_router(router_message)
+app.include_router(router_chat)
 
 
 # Настройка мидвэира для прометеуса

@@ -29,8 +29,8 @@ class BrokerRepository:
 
     async def add_global_queue(self, q_name: str):
         # Пока сделал так,чтобы меньше мороки создания
-        self.consumer.add_queue(q_name)
-        self.produser.add_queue(q_name)
+        await self.consumer.add_queue(q_name)
+        await self.produser.add_queue(q_name)
         pass
 
 
