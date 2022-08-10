@@ -1,5 +1,7 @@
 import asyncio
+from uuid import UUID
 import aio_pika
+from typing import List
 from aio_pika import ExchangeType
 from aio_pika.abc import (
     AbstractQueue,
@@ -7,7 +9,7 @@ from aio_pika.abc import (
     AbstractExchange,
     AbstractRobustConnection,
 )
-from rabbit import Rabbit
+from db.rabbitmq.rabbit import Rabbit
 from typing import Type
 
 username = "user"
@@ -62,6 +64,11 @@ class Consumer(Rabbit):
         )
         return exchange
 
+    async def bind_queue_to_exchange(self, exchange: AbstractExchange, queue_name: str):
+        queue, ok = await self._channel.get_queue(queue_name)
+        if ok:
+            await queue.bind(exchange)
+
     async def wait_message_to_channel(self, queue: Type[AbstractQueue]):
         """Ожидаем сообщения из канала"""
         # Ожидает максимум 10 сообещний
@@ -69,10 +76,8 @@ class Consumer(Rabbit):
         async with queue.iterator() as queue_iter:
             async for message in queue_iter:
                 async with message.process(ignore_processed=True):
-
-                    print("MESSAGE BODY BINARY", message.body)
                     await self.on_message(message=message)
-                    yield message
+                    yield message.decode()
                     # if queue.name in message.body.decode():
                     #     print("УРААААА", queue.name)
 

@@ -1,3 +1,4 @@
+from email.policy import default
 from sqlalchemy import (
     ARRAY,
     Column,
@@ -16,19 +17,21 @@ from sqlalchemy.sql import func
 import datetime
 from db.postgres.database import Model
 from sqlalchemy.orm import relationship
-from uuid import UUID, uuid4
+
+import uuid
+from sqlalchemy.dialects.postgresql import UUID, ENUM
 from enum import Enum
 
 
 class User(Model):
     __tablename__ = "users"
 
-    id = Column(UUID, primary_key=True)
+    id = Column(UUID, primary_key=True, default=uuid.uuid4)
     username = Column(String, nullable=False, unique=True)
     firstname = Column(String, nullable=False)
     lastname = Column(String, nullable=False)
     middlename = Column(String)
-    gender = Column(Enum("male", "female", "other", name="GENDER_TYPE"), nullable=False)
+    gender = Column(ENUM("male", "female", "other", name="GENDER_TYPE"), nullable=False)
     birthday = Column(Date, nullable=False)
     photo_uri = Column(String, nullable=False)
     join_date = Column(Date, nullable=False, server_default=text("now()"))
@@ -78,7 +81,7 @@ class Attachment(Model):
 
     id = Column(UUID, primary_key=True)
     type = Column(
-        Enum(
+        ENUM(
             "link",
             "image",
             "document",
@@ -119,7 +122,7 @@ class Chat(Model):
 
     id = Column(UUID, primary_key=True)
     type = Column(
-        Enum("global", "avatar", "personal", "group", name="CHAT_TYPE"), nullable=False
+        ENUM("global", "avatar", "personal", "group", name="CHAT_TYPE"), nullable=False
     )
     created_at = Column(DateTime, nullable=False, server_default=text("now()"))
 
@@ -159,16 +162,14 @@ class PersonalChat(Model):
 
 class GroupChat(Model):
     __tablename__ = "group_chats"
-    id = (Column("id", ForeignKey("chats.id")),)
-    name = (Column("name", String, nullable=False, unique=True),)
-    title = (Column("title", String),)
-    description = (Column("description", String),)
-    photo_uri = (
-        Column(
-            "photo_uri",
-            String,
-            server_default=text("'random generated'::character varying"),
-        ),
+    id = Column("id", ForeignKey("chats.id"), primary_key=True)
+    name = Column("name", String, nullable=False, unique=True)
+    title = Column("title", String)
+    description = Column("description", String)
+    photo_uri = Column(
+        "photo_uri",
+        String,
+        server_default=text("'random generated'::character varying"),
     )
     default_permissions = (
         Column(

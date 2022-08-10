@@ -8,7 +8,7 @@ from repositories.chat import ChatRepository
 from repositories.message import MessageRepository
 
 # Модели PG
-from models.postgres.pg_models import User, Chat as ChatModel
+from models.postgres.pg_models import Chat as ChatModel
 
 # Схемы данных
 from models.pydantic.chat import Chat as schema_chat, ChatCreate
@@ -43,8 +43,9 @@ class Chat:
         # TODO { Deprecated } Меняем статус пользователя
         self.users.edit(user_id, "is_online", True)
         q = self.broker.add_queue(str(user_id))
-
-        await self.broker.wait_messaging()
+        # передаём не вызванную ф-цию чтобы можно было её вызвать
+        # ХИТРЫЙ ТЕСТ ПЕРЕДАЧИ ТЕЛА Ф-ЦИИ НАПРЯМУЮ
+        return self.broker.wait_messaging()
 
     async def create_chat(self, chat: ChatCreate):
         """Создание группового или персонального чата"""
@@ -53,7 +54,9 @@ class Chat:
                 *chat.participants, schema_chat(type="personal")
             )
         self.chat.create_group_chat(chat)
-        await self.broker.create_exchange(chat.chatname)
+        exchange = await self.broker.create_exchange(chat.chatname)
+        await self.broker.bind_queue_to_exchange(chat.participants, exchange)
+
         # Смотрим кто из них онлайн и закидываем в exchange
 
     def get_all_chats(self) -> List[ChatModel]:

@@ -1,8 +1,10 @@
 import asyncio
 from time import sleep
 import uvicorn
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Depends
 from sse_starlette import EventSourceResponse
+from services.chat.chat import Chat
+from uuid import UUID
 
 router_chat = APIRouter(
     prefix="/chats",
@@ -17,6 +19,7 @@ async def data_generator():
     await asyncio.sleep(10)
 
 
-@router_chat.get("/")
-async def sever_evenets():
+@router_chat.get("/{id}")
+async def sever_evenets(id: UUID, chat: Chat = Depends()):
+    chat.user_online()
     return EventSourceResponse(data_generator())

@@ -12,12 +12,10 @@ class GenderType(Enum):
 
 
 class UserBase(BaseModel):
-    """Model for user"""
-
     username = str
     firstname = str
     lastname = str
-    middlename = str | None
+    middlename = str
     gender = GenderType
     birthday = datetime
     photo_uri = str
@@ -45,6 +43,6 @@ class User(UserBase):
         schema_extra = {
             "example": {
                 **UserBase.Config.schema_extra.get("example"),
-                "id": "1",
+                "id": "5dc763fe-579f-4436-aa25-5ee5681e839e",
             }
         }

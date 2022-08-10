@@ -4,6 +4,8 @@ import datetime
 from typing import List
 from enum import Enum
 
+from models.postgres.pg_models import Attachment
+
 
 class MessageType(Enum):
     GLOBAL = "gloabal"
@@ -13,25 +15,21 @@ class MessageType(Enum):
 
 
 class MessageBase(BaseModel):
-    "Базовая модель сообщений"
     chat_id = UUID
     user_id = UUID
     reply_to = int | None
     content = str
-    attachment = List[UUID]
+    attachment = List[UUID] | None
 
     class Config:
         schema_extra = {
             "example": {
                 "chat_id": "e93e61ad-70a3-46c0-a377-8c5055f0c022",
-                "user_id": "",
+                "user_id": "5dc763fe-579f-4436-aa25-5ee5681e839e",
                 "type": "personal",
-                "title": "Это супер новый чат для распродаж",
-                "created_at": datetime.datetime.now(),
-                "discription": "Чат для тестирования аватара",
-                "photo_uri": "photo_uri",
-                "default_permissions": "пока никаких",
-                "owner_id": "c0b2e43b-e913-4381-9095-d564b343370a",
+                "reply_to": None,
+                "content": str,
+                "attachment": None,
             }
         }
 

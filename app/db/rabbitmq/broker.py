@@ -1,6 +1,8 @@
-import rabbit
-from cons import Consumer
+from db.rabbitmq.rabbit import Rabbit
+from db.rabbitmq.cons import Consumer
 from aio_pika.abc import AbstractQueue, AbstractExchange
+from typing import List
+from uuid import UUID
 
 # from prod import Produser
 
@@ -11,7 +13,7 @@ class BrokerRepository:
         # self.produser = None
 
     async def connect_to_broker(self):
-        await rabbit.Rabbit.connect()
+        await Rabbit.connect()
 
     async def init_consumer(self):
         self.consumer = Consumer()
@@ -27,18 +29,22 @@ class BrokerRepository:
     #     await self.produser.send_message_to_channel(message=message, routing_key=queue)
 
     async def add_queue(self, q_name: str):
+        """Создаём или получаем существующую очередь"""
         # Создание очереди для консумеров
         queue_concumer = await self.consumer.add_queue(q_name)
         # q_p = await self.produser.add_queue(q_name)
         return queue_concumer
 
-    async def bind_queue_to_exchange(self, queue: str, exchange: str):
-        pass
+    async def bind_queue_to_exchange(self, queues: List[UUID], exchange: str):
+        """Биндим пользователей к чату"""
+        for q in queues:
+            self.consumer.bind_queue_to_exchange(queue_name=q, exchange=exchange)
 
-    async def wait_messaging(self, queue: AbstractQueue):
+    async def wait_messaging(self) -> str:
         """Ожидание получения сообщения"""
         # TODO сделать вывод данных
-        await self.consumer.wait_message_to_channel(queue=queue)
+        return self.consumer.wait_message_to_channel
+        # yield message
 
     async def create_exchange(self, name: str) -> AbstractExchange:
         """Создание области для очередей"""

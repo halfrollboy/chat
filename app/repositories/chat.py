@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from models.postgres.pg_models import Chat, ChatUser
 from repositories.user import UserRepository
-from models.pydantic.chat import ChatCreate
+from models.pydantic.chat import ChatCreate, ChatBase
 from db.postgres.dependencies import get_db
 from loguru import logger
 
@@ -29,10 +29,10 @@ class ChatRepository:
         return query.offset(skip).limit(max).all()
 
     # TODO Пересмотреть создание чатика
-    def create(self, chat: Chat) -> Chat:
+    def create(self, chat: ChatBase) -> Chat:
         """Создание простого chata"""
         try:
-            db_chat = Chat(type=chat.type, created_at=chat.created_at, type=chat.type)
+            db_chat = Chat(type=chat.type)
 
             self.db.add(db_chat)
             self.db.commit()
