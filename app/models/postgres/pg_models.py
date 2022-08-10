@@ -1,7 +1,3 @@
-from email.policy import default
-from faulthandler import disable
-from typing import List
-from h11 import Data
 from sqlalchemy import (
     ARRAY,
     Column,
@@ -11,102 +7,174 @@ from sqlalchemy import (
     ForeignKey,
     Enum,
     DateTime,
+    Date,
+    text,
+    ForeignKeyConstraint,
 )
-from sqlalchemy.ext.mutable import MutableList
 import enum
 from sqlalchemy.sql import func
 import datetime
 from db.postgres.database import Model
+from sqlalchemy.orm import relationship
 from uuid import UUID, uuid4
-from models.pydantic.chat import ChatType
-from models.pydantic.user import GenderType
-
-
-class Messages(Model):
-    __tablename__ = "messages"
-    id = Column(Integer, primary_key=True)
-    chat_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    reply_to = Column(Integer)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    edited_at = Column(DateTime(timezone=True), onupdate=func.now())
-    content = Column(String)
-    attachment = Column(MutableList.as_mutable(ARRAY(UUID)), unique=False)
-
-
-class Chats(Model):
-    __tablename__ = "chats"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    name = Column(String(200))
-    type = Column(ChatType)
-    title = Column(String)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    discription = Column(String)
-    photo_uri = Column(String)
-    default_permissions = Column(String(200))
-    owner_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-
-
-# class User(Base):
-#     __tablename__ = "users"
-
-#     id = Column(UUID, primary_key=True)
-#     username = Column(String, nullable=False, unique=True)
-#     firstname = Column(String, nullable=False)
-#     lastname = Column(String, nullable=False)
-#     middlename = Column(String)
-#     gender = Column(Enum("male", "female", "other", name="GENDER_TYPE"), nullable=False)
-#     birthday = Column(Date, nullable=False)
-#     photo_uri = Column(String, nullable=False)
-#     join_date = Column(Date, nullable=False, server_default=text("now()"))
-#     is_online = Column(Boolean, nullable=False, server_default=text("false"))
-#     last_seen = Column(DateTime, nullable=False, server_default=text("now()"))
+from enum import Enum
 
 
 class User(Model):
-    __tablename__ = "user"
-    id = Column(Integer, primary_key=True)
-    username = Column(String(200), unique=True)
-    firstname = Column(String(200))
-    lastname = Column(String(200))
-    middlname = Column(String(200))
-    gender = Column(GenderType)
-    birthday = Column(DateTime)
-    photo_uri = Column(String)
-    join_date = Column(DateTime)
-    is_online = Column(Boolean)
-    last_seen = Column(DateTime)  # Точно ли
+    __tablename__ = "users"
 
-    # Пока оставлю так чтобы была какая-то регистрация
-    password = Column(String(200))
-    email = Column(String, unique=True, index=True)
-    phone = Column(String, unique=True)
+    id = Column(UUID, primary_key=True)
+    username = Column(String, nullable=False, unique=True)
+    firstname = Column(String, nullable=False)
+    lastname = Column(String, nullable=False)
+    middlename = Column(String)
+    gender = Column(Enum("male", "female", "other", name="GENDER_TYPE"), nullable=False)
+    birthday = Column(Date, nullable=False)
+    photo_uri = Column(String, nullable=False)
+    join_date = Column(Date, nullable=False, server_default=text("now()"))
+    is_online = Column(Boolean, nullable=False, server_default=text("false"))
+    last_seen = Column(DateTime, nullable=False, server_default=text("now()"))
 
 
-class Company(Model):
-    __tablename__ = "company"
+class UserSetting(User):
+    __tablename__ = "user_settings"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    phone = Column(String, unique=True)
-    email = Column(String, unique=True, index=True)
-    adress = Column(String)
-    coordinate = Column(String)
-    info_id = Column(Integer)
-    edited = Column(Boolean, nullable=False, default=True)
+    id = Column(ForeignKey("users.id"), primary_key=True)
+    allow_avatar_suggestions = Column(Boolean, server_default=text("false"))
+    allow_sync_calendar = Column(Boolean, server_default=text("false"))
+    allow_profile_sharing = Column(Boolean, server_default=text("false"))
 
 
-class Employee(Model):
-    __tablename__ = "employee"
+class Message(Model):
+    __tablename__ = "messages"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["chat_id", "reply_to"], ["messages.chat_id", "messages.message_id"]
+        ),
+    )
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(200), nullable=False)
-    fio = Column(String(200))
-    phone = Column(String, unique=True)
-    company_id = Column(Integer, ForeignKey("company.id"))
-    email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
-    gender = Column(Boolean, nullable=False)
-    info = Column(Integer)
-    admin = Column(Boolean, nullable=False)
-    owner = Column(Boolean, nullable=False)
+    chat_id = Column(ForeignKey("chats.id"), primary_key=True, nullable=False)
+    message_id = Column(
+        Integer,
+        primary_key=True,
+        nullable=False,
+        server_default=text("nextval('messages_message_id_seq'::regclass)"),
+    )
+    user_id = Column(ForeignKey("users.id"), nullable=False)
+    reply_to = Column(Integer)
+    created_at = Column(DateTime, nullable=False, server_default=text("now()"))
+    edited_at = Column(DateTime)
+    content = Column(String)
+    attachments = Column(ARRAY(Integer()))
+    is_pinned = Column(Boolean, server_default=text("false"))
+
+    chat = relationship("Message", remote_side=[chat_id, message_id])
+    chat1 = relationship("Chat")
+    user = relationship("User")
+
+
+class Attachment(Model):
+    __tablename__ = "attachments"
+
+    id = Column(UUID, primary_key=True)
+    type = Column(
+        Enum(
+            "link",
+            "image",
+            "document",
+            "other",
+            "message",
+            "note",
+            "event",
+            "news",
+            name="ATTACHMENT_TYPE",
+        ),
+        nullable=False,
+    )
+    created_at = Column(DateTime)
+    edited_at = Column(DateTime)
+    uri = Column(String, nullable=False)
+    default_permissions = Column(
+        String(4), server_default=text("'r-s-'::character varying")
+    )
+
+    workspaces = relationship("Workspace", secondary="workspace_attachment")
+
+
+class AttachmentUser(Model):
+    __tablename__ = "attachment_user"
+
+    attachment_id = Column(
+        ForeignKey("attachments.id"), primary_key=True, nullable=False
+    )
+    user_id = Column(ForeignKey("users.id"), primary_key=True, nullable=False)
+    permissions = Column(String(4))
+
+    attachment = relationship("Attachment")
+    user = relationship("User")
+
+
+class Chat(Model):
+    __tablename__ = "chats"
+
+    id = Column(UUID, primary_key=True)
+    type = Column(
+        Enum("global", "avatar", "personal", "group", name="CHAT_TYPE"), nullable=False
+    )
+    created_at = Column(DateTime, nullable=False, server_default=text("now()"))
+
+
+class ChatType(Enum):
+    """Для использования вне таблиц"""
+
+    GLOBAL = "global"
+    AVATAR = "avatar"
+    PERSONAL = "personal"
+    GROUP = "group"
+
+
+class ChatUser(Model):
+    __tablename__ = "chat_user"
+
+    chat_id = Column(ForeignKey("chats.id"), primary_key=True, nullable=False)
+    user_id = Column(ForeignKey("users.id"), primary_key=True, nullable=False)
+    permissions = Column(String(8))
+    last_read_id = Column(Integer, server_default=text("'-1'::integer"))
+    is_muted = Column(Boolean, server_default=text("false"))
+    mute_end = Column(Date)
+    is_left = Column(Boolean, server_default=text("false"))
+
+    chat = relationship("Chat")
+    user = relationship("User")
+
+
+class PersonalChat(Model):
+    __tablename__ = "personal_chats"
+
+    id = Column(UUID, primary_key=True)
+    chat_id = Column(ForeignKey("chats.id"))
+
+    chat = relationship("Chat")
+
+
+class GroupChat(Model):
+    __tablename__ = "group_chats"
+    id = (Column("id", ForeignKey("chats.id")),)
+    name = (Column("name", String, nullable=False, unique=True),)
+    title = (Column("title", String),)
+    description = (Column("description", String),)
+    photo_uri = (
+        Column(
+            "photo_uri",
+            String,
+            server_default=text("'random generated'::character varying"),
+        ),
+    )
+    default_permissions = (
+        Column(
+            "default_permissions",
+            String(8),
+            server_default=text("'rwspi---'::character varying"),
+        ),
+    )
+    owner_id = Column("owner_id", ForeignKey("users.id"))

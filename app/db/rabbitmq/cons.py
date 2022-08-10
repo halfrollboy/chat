@@ -1,7 +1,14 @@
 import asyncio
 import aio_pika
-
+from aio_pika import ExchangeType
+from aio_pika.abc import (
+    AbstractQueue,
+    AbstractRobustChannel,
+    AbstractExchange,
+    AbstractRobustConnection,
+)
 from rabbit import Rabbit
+from typing import Type
 
 username = "user"
 password = "password"
@@ -19,49 +26,58 @@ class Consumer(Rabbit):
             cls.instance = super(Consumer, cls).__new__(cls)
         return cls.instance
 
-    async def connect(self) -> None:
-        """
-        Реализовал через classmethod чтобы можно было переподнимать
-        подключение как из Consumer так и через Produser
-        """
-        print("Get conn")  # TODO переписать print на логи и сделать settings
-        self.conn = await aio_pika.connect_robust(
-            f"amqp://{username}:{password}@localhost:5672/",
-            on_open_callback=lambda x: print("Open connect rabbit", x),
-            on_open_error_callback=lambda x: print("Error connect Rabbit", x),
-            on_close_callback=lambda x: print("Rabbit Connection CLOSE", x),
-        )
-        self._channel = await self.conn.channel()
-        return self.conn
+    # TODO Использовалось для тестов
+    # Может использоваться, если у нас будет только один Consumer
+    # ------
+    # async def connect(self) -> None:
+    #     """
+    #     Реализовал через classmethod чтобы можно было переподнимать
+    #     подключение как из Consumer так и через Produser
+    #     """
+    #     self.conn = await aio_pika.connect_robust(
+    #         f"amqp://{username}:{password}@localhost:5672/",
+    #         on_open_callback=lambda x: print("Open connect rabbit", x),
+    #         on_open_error_callback=lambda x: print("Error connect Rabbit", x),
+    #         on_close_callback=lambda x: print("Rabbit Connection CLOSE", x),
+    #     )
+    #     self._channel = await self.conn.channel()
+    #     return self.conn
 
-    async def channel(self):
+    async def channel(self) -> Type[AbstractRobustChannel]:
+        """Создаём сущность канал"""
         self._channel = await self.conn.channel()
 
-    async def add_queue(self, q_name):
-        # Declaring queue
+    async def add_queue(self, q_name) -> Type[AbstractQueue]:
+        """Создаём или получаем очердь"""
         return await self._channel.declare_queue(
             q_name,
             durable=True,
         )
 
-    async def wait_message_to_channel(self, queue):
-        print("wait now")
-        # async with self.conn:
-        # Отправляет максимум 10 сообещний
-        await self._channel.set_qos(prefetch_count=10)
-        print("wel")
+    async def create_fanout_exchage(self, name: str) -> AbstractExchange:
+        """Создание кастомных fanout Exchange"""
+        exchange = await self._channel.declare_exchange(
+            name,
+            ExchangeType.FANOUT,
+        )
+        return exchange
+
+    async def wait_message_to_channel(self, queue: Type[AbstractQueue]):
+        """Ожидаем сообщения из канала"""
+        # Ожидает максимум 10 сообещний
+        # await self._channel.set_qos(prefetch_count=10)
         async with queue.iterator() as queue_iter:
             async for message in queue_iter:
-                await self.on_message(message=message)
-                print("mes")
                 async with message.process(ignore_processed=True):
-                    print("MESSAGE BODY", message.body)
 
-                    if queue.name in message.body.decode():
-                        print("УРААААА", queue.name)
+                    print("MESSAGE BODY BINARY", message.body)
+                    await self.on_message(message=message)
+                    yield message
+                    # if queue.name in message.body.decode():
+                    #     print("УРААААА", queue.name)
 
     async def on_message(self, message):
-        await asyncio.sleep(message.body.count(b"."))
+        """Функция подтверждения получения сообщения"""
         print(" [x] Done msg")
         await message.ack()
 

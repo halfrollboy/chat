@@ -1,4 +1,7 @@
-from pydantic import BaseModel, EmailStr, ValidationError, validator
+from dataclasses import Field
+from datetime import datetime
+from uuid import UUID
+from pydantic import BaseModel
 from enum import Enum
 
 
@@ -9,52 +12,32 @@ class GenderType(Enum):
 
 
 class UserBase(BaseModel):
-    """Model for client"""
+    """Model for user"""
 
-    username: str
-    firstname: str | None = None
-    lastname: str | None = None
-    middlename: str | None = None
-    disabled: bool | None = None
+    username = str
+    firstname = str
+    lastname = str
+    middlename = str | None
+    gender = GenderType
+    birthday = datetime
+    photo_uri = str
 
     class Config:
         schema_extra = {
             "example": {
-                "username": "@boogeyman",
-                "email": "barry.allen@starlabs.com",
+                "username": "boogeyman",
                 "firstname": "Piter",
-                "lastname": " Parker",
-                "phone": "+79210707568",
+                "lastname": "Parker",
+                "middlename": "Petrovich",
+                "gender": "male",
+                "birthday": "2022-08-10 15:45:43.842195",
+                "photo_uri": "00000000",
             }
         }
 
 
-class UserCred(UserBase):
-    email: EmailStr
-    phone: str | None = None
-
-    # @validator('phone')
-    # def name_must_contain_space(cls, value, values, config, field):
-    #     logger.debug(f"log {value}")
-    #     if len(value)!=7:
-    #         raise ValidationError('not a truth phone')
-    #     return value
-
-
-class UserCreate(UserCred):
-    password: str
-
-    class Config:
-        schema_extra = {
-            "example": {
-                **UserBase.Config.schema_extra.get("example"),
-                "password": "secret",
-            }
-        }
-
-
-class User(UserCred):
-    id: int
+class User(UserBase):
+    id: UUID
 
     class Config:
         orm_mode = True  # TL;DR; помогает связать модель со схемой

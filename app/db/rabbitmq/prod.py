@@ -69,6 +69,9 @@ class Produser(Rabbit):
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )
 
+    # async def get_all_queues(self):
+    #     self._channel.get_queue()
+
     async def add_exchange(self):
         # await self._channel.declare_exchange()
         pass

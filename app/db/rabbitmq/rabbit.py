@@ -3,12 +3,12 @@ import asyncio
 import aio_pika
 import time
 
-# from config import get_db_settings
+from db.rabbitmq.config import get_db_settings
 
 username = "user"
 password = "password"
 
-# settings = get_db_settings()
+settings = get_db_settings()
 
 
 class Rabbit:
@@ -28,9 +28,3 @@ class Rabbit:
             on_open_error_callback=lambda x: print("Error connect Rabbit", x),
             on_close_callback=lambda x: print("Rabbit Connection CLOSE", x),
         )
-
-    def channel(self):
-        pass
-
-    def send_message_to_channel(self):
-        pass

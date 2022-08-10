@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel
 from uuid import uuid4, UUID
 import datetime
 from typing import List
@@ -16,9 +16,7 @@ class MessageBase(BaseModel):
     "Базовая модель сообщений"
     chat_id = UUID
     user_id = UUID
-    reply_to = int
-    created_at = datetime.datetime
-    edited_at = datetime.datetime
+    reply_to = int | None
     content = str
     attachment = List[UUID]
 
@@ -38,8 +36,18 @@ class MessageBase(BaseModel):
         }
 
 
+class EditedMessage(MessageBase):
+    edited_at = datetime.datetime
+    schema_extra = {
+        "example": {
+            **MessageBase.Config.schema_extra.get("example"),
+            "edited_at": "2022-08-10 16:17:05.174747",
+        }
+    }
+
+
 class Message(MessageBase):
-    id: int
+    message_id: int
 
     class Config:
         orm_mode = True  # TL;DR; помогает связать модель со схемой
