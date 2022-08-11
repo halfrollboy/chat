@@ -2,7 +2,7 @@ from typing import List
 from pydantic import parse_obj_as
 from fastapi import APIRouter
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.pydantic.user import User, UserCreate
+from models.pydantic.user import User, UserBase
 from repositories.user import UserRepository
 from loguru import logger
 
@@ -22,7 +22,7 @@ async def list_users(skip: int = 0, max: int = 10, users: UserRepository = Depen
 
 # Создание пользователя
 @router_user.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
-async def store_user(user: UserCreate, users: UserRepository = Depends()):
+async def store_user(user: UserBase, users: UserRepository = Depends()):
     db_user = users.find_by_email(email=user.email)
 
     if db_user:

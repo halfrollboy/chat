@@ -12,13 +12,13 @@ class GenderType(Enum):
 
 
 class UserBase(BaseModel):
-    username = str
-    firstname = str
-    lastname = str
-    middlename = str
-    gender = GenderType
-    birthday = datetime
-    photo_uri = str
+    username: str
+    firstname: str
+    lastname: str
+    middlename: str | None
+    gender: GenderType
+    birthday: datetime
+    photo_uri: str
 
     class Config:
         schema_extra = {

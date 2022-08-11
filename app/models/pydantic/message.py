@@ -15,11 +15,11 @@ class MessageType(Enum):
 
 
 class MessageBase(BaseModel):
-    chat_id = UUID
-    user_id = UUID
-    reply_to = int | None
-    content = str
-    attachment = List[UUID] | None
+    chat_id: UUID
+    user_id: UUID
+    reply_to: int | None
+    content: str
+    attachment: List[UUID] | None
 
     class Config:
         schema_extra = {
