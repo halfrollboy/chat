@@ -36,6 +36,7 @@ class UserRepository:
                     .filter(User.id == user_id)
                     .update({atr: value}, synchronize_session=False)
                 )
+                # self.db.add(query)
                 self.db.commit()
             except SQLAlchemyError:
                 self.db.rollback()

@@ -278,11 +278,11 @@ class Message(Base):
     created_at = Column(DateTime, nullable=False, server_default=text("now()"))
     edited_at = Column(DateTime)
     content = Column(String)
-    attachments = Column(ARRAY(Integer()))
+    attachments = Column(ARRAY(UUID()))
     is_pinned = Column(Boolean, server_default=text("false"))
 
     chat = relationship("Message", remote_side=[chat_id, message_id])
-    chat1 = relationship("Chat")
+    # chat1 = relationship("Chat")
     user = relationship("User")
 
 

@@ -22,7 +22,7 @@ class Chat:
     удобно читаемый код, как простой текст
     """
 
-    async def __init__(
+    def __init__(
         self,
         broker: BrokerRepository = Depends(get_broker),
         users: UserRepository = Depends(),
@@ -43,7 +43,7 @@ class Chat:
         # TODO { Deprecated } Меняем статус пользователя
         self.users.edit(user_id, "is_online", True)
         q = self.broker.add_queue(str(user_id))
-        user_chats = [chat.id for chat in self.chat.find_user_chats(user_id)]
+        user_chats = [chat.chat_id for chat in self.chat.find_user_chats(user_id)]
         for exchange in user_chats:
             await self.broker.bind_queue_to_exchange(user_id, exchange)
         # передаём не вызванную ф-цию чтобы можно было её вызвать

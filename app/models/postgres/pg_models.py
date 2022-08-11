@@ -26,7 +26,7 @@ from enum import Enum
 class User(Model):
     __tablename__ = "users"
 
-    id = Column(UUID, primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     username = Column(String, nullable=False, unique=True)
     firstname = Column(String, nullable=False)
     lastname = Column(String, nullable=False)
@@ -68,18 +68,18 @@ class Message(Model):
     created_at = Column(DateTime, nullable=False, server_default=text("now()"))
     edited_at = Column(DateTime)
     content = Column(String)
-    attachments = Column(ARRAY(Integer()))
+    attachments = Column(ARRAY(UUID()))
     is_pinned = Column(Boolean, server_default=text("false"))
 
     chat = relationship("Message", remote_side=[chat_id, message_id])
-    chat1 = relationship("Chat")
-    user = relationship("User")
+    # chat1 = relationship("Chat")
+    # user = relationship("User")
 
 
 class Attachment(Model):
     __tablename__ = "attachments"
 
-    id = Column(UUID, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(
         ENUM(
             "link",
@@ -101,8 +101,6 @@ class Attachment(Model):
         String(4), server_default=text("'r-s-'::character varying")
     )
 
-    workspaces = relationship("Workspace", secondary="workspace_attachment")
-
 
 class AttachmentUser(Model):
     __tablename__ = "attachment_user"
@@ -120,7 +118,7 @@ class AttachmentUser(Model):
 class Chat(Model):
     __tablename__ = "chats"
 
-    id = Column(UUID, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(
         ENUM("global", "avatar", "personal", "group", name="CHAT_TYPE"), nullable=False
     )
@@ -154,7 +152,7 @@ class ChatUser(Model):
 class PersonalChat(Model):
     __tablename__ = "personal_chats"
 
-    id = Column(UUID, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     chat_id = Column(ForeignKey("chats.id"))
 
     chat = relationship("Chat")

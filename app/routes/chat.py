@@ -19,7 +19,6 @@ async def data_generator():
 
 
 @router_chat.get("/{id}")
-async def sever_evenets(id: UUID):
-    chat = Chat()
-    chat.user_online()
-    return EventSourceResponse(data_generator())
+async def sever_evenets(id: UUID, chat: Chat = Depends()):
+    exhange = await chat.user_online(id)
+    return EventSourceResponse(exhange())
