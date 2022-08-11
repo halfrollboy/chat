@@ -171,11 +171,9 @@ class GroupChat(Model):
         String,
         server_default=text("'random generated'::character varying"),
     )
-    default_permissions = (
-        Column(
-            "default_permissions",
-            String(8),
-            server_default=text("'rwspi---'::character varying"),
-        ),
+    default_permissions = Column(
+        "default_permissions",
+        String(8),
+        server_default=text("'rwspi---'::character varying"),
     )
     owner_id = Column("owner_id", ForeignKey("users.id"))

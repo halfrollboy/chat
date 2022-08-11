@@ -16,10 +16,10 @@ router_chat = APIRouter(
 # Здесь придумать как должно выглядеть
 async def data_generator():
     yield {"data": "Aлё"}
-    await asyncio.sleep(10)
 
 
 @router_chat.get("/{id}")
-async def sever_evenets(id: UUID, chat: Chat = Depends()):
+async def sever_evenets(id: UUID):
+    chat = Chat()
     chat.user_online()
     return EventSourceResponse(data_generator())
