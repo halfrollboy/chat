@@ -43,8 +43,11 @@ class Chat:
         # TODO { Deprecated } Меняем статус пользователя
         self.users.edit(user_id, "is_online", True)
         q = self.broker.add_queue(str(user_id))
+        user_chats = [chat.id for chat in self.chat.find_user_chats(user_id)]
+        for exchange in user_chats:
+            await self.broker.bind_queue_to_exchange(user_id, exchange)
         # передаём не вызванную ф-цию чтобы можно было её вызвать
-        # ХИТРЫЙ ТЕСТ ПЕРЕДАЧИ ТЕЛА Ф-ЦИИ НАПРЯМУЮ
+        # ХИТРЫЙ ТЕСТ ПЕРЕДАЧИ ТЕЛА Ф-ЦИИ НАПРЯМУЮ :)
         return self.broker.wait_messaging()
 
     async def create_chat(self, chat: ChatCreate):
@@ -57,7 +60,5 @@ class Chat:
         exchange = await self.broker.create_exchange(chat.chatname)
         await self.broker.bind_queue_to_exchange(chat.participants, exchange)
 
-        # Смотрим кто из них онлайн и закидываем в exchange
-
-    def get_all_chats(self) -> List[ChatModel]:
-        return self.chat.all()
+    # def get_all_chats(self) -> List[ChatModel]:
+    #     return self.chat.all()

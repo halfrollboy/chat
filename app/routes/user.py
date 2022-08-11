@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from models.pydantic.user import User, UserBase
 from repositories.user import UserRepository
 from loguru import logger
+from uuid import UUID
 
 router_user = APIRouter(
     prefix="/users",
@@ -20,34 +21,11 @@ async def list_users(skip: int = 0, max: int = 10, users: UserRepository = Depen
     return parse_obj_as(List[User], db_user)
 
 
-# Создание пользователя
-@router_user.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
-async def store_user(user: UserBase, users: UserRepository = Depends()):
-    db_user = users.find_by_email(email=user.email)
-
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    logger.debug(f"log {user}")
-    db_user = users.create(user)
-    return User.from_orm(db_user)
-    # TODO крч надо разобравться какая модель сбоит, типа почему-то приходит из create не то что ожидает User в return
-
-
 # Тестовое пространство получения пользователя
 @router_user.get("/{user_id}", response_model=User)
-async def get_user(user_id: int, users: UserRepository = Depends()):
+async def get_user(user_id: UUID, users: UserRepository = Depends()):
     db_user = users.find(user_id)
 
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return User.from_orm(db_user)
-
-
-@router_user.get("/online/{user_id}")
-async def online(user_id):
-    pass
-
-
-@router_user.get("/ofline/{user_id}")
-async def online(user_id):
-    pass

@@ -42,6 +42,11 @@ class ChatRepository:
         logger.debug(f"Add Chat {db_chat}")
         return db_chat
 
+    def find_user_chats(self, user_id: uuid.UUID):
+        """Получить все чаты пользователя"""
+        query = self.db.query(ChatUser)
+        return query.filter(ChatUser.user_id == user_id).all()
+
     def add_user_to_chat(self, chat_id: uuid.UUID, user_id: uuid.UUID) -> bool:
         # Тест проверяем есть ли в базе такой чат и такой пользователь
         # TODO Пока сделал без модели, чисто чтоб добавить

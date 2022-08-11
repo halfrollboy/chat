@@ -35,16 +35,20 @@ class BrokerRepository:
         # q_p = await self.produser.add_queue(q_name)
         return queue_concumer
 
-    async def bind_queue_to_exchange(self, queues: List[UUID], exchange: str):
+    async def bind_queue_to_exchange(
+        self, queues: str | List[UUID], exchange: str | List[str]
+    ):
         """Биндим пользователей к чату"""
-        for q in queues:
-            self.consumer.bind_queue_to_exchange(queue_name=q, exchange=exchange)
+        if type(exchange) == type(""):
+            for q in queues:
+                self.consumer.bind_queue_to_exchange(queue_name=q, exchange=exchange)
+        else:
+            for e in exchange:
+                self.consumer.bind_queue_to_exchange(queue_name=q, exchange=e)
 
     async def wait_messaging(self) -> str:
         """Ожидание получения сообщения"""
-        # TODO сделать вывод данных
         return self.consumer.wait_message_to_channel
-        # yield message
 
     async def create_exchange(self, name: str) -> AbstractExchange:
         """Создание области для очередей"""
