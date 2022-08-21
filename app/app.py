@@ -4,18 +4,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from db.postgres.database import Model, engine
-from routes.chat import router_chat
+# from db.postgres.database import Model, engine
+from routes.sse import router_sse
 from routes.user import router_user
+from routes.chat import router_chat
 
 # import os
 from loguru import logger
 
-Model.metadata.create_all(bind=engine)
+# Model.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
 app.include_router(router_user)
+app.include_router(router_sse)
 app.include_router(router_chat)
 
 
@@ -34,9 +36,9 @@ async def read_root():
     return {"ping": "pong!"}
 
 
-@router_user.get("/token")
-async def get_token():
-    return f"{get_auth()}"
+# @router_user.get("/token")
+# async def get_token():
+#     return f"{get_auth()}"
 
 
 if __name__ == "__main__":

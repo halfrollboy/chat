@@ -17,11 +17,9 @@ password = "password"
 
 
 class Consumer(Rabbit):
-    def __init__(self):
-        self.QUEUE = []
-        # self.routing_key = "users"
-        self.exchange = None
-        self._channel = None
+    _channel = None
+    exchange = None
+    QUEUE = []
 
     def __new__(cls):
         if not hasattr(cls, "instance"):
@@ -46,7 +44,11 @@ class Consumer(Rabbit):
     #     return self.conn
 
     async def channel(self) -> Type[AbstractRobustChannel]:
-        """Создаём сущность канал"""
+        """Создаём сущность канал
+
+        не создаём пулл channel потому что их можно сделать около 10
+        и соответственно 10 человек только смогут слушать rabbit
+        """
         self._channel = await self.conn.channel()
 
     async def add_queue(self, q_name) -> Type[AbstractQueue]:

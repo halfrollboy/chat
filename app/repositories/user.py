@@ -2,9 +2,12 @@ from typing import Any, List
 from os import environ
 from uuid import UUID
 from fastapi.params import Depends
-from sqlalchemy.orm import Session
 
+# from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 import models.pydantic.user as schema
+from sqlalchemy import update
 
 from models.postgres.pg_models import User
 from db.postgres.dependencies import get_db
@@ -13,52 +16,50 @@ from loguru import logger
 
 
 class UserRepository:
-    def __init__(self, db: Session = Depends(get_db)):
+    def __init__(self, db: AsyncSession = Depends(get_db)):
         self.db = db  # внедрение зависимостей
 
-    def find(self, id: UUID) -> User:
+    async def find(self, id: UUID) -> User:
         """Поиск пользователя по id"""
-        query = self.db.query(User)
-        return query.filter(User.id == id).first()
+        mass = await self.db.get(User, {"id": id})
+        return mass
 
-    def all(self, skip: int = 0, max: int = 100) -> List[User]:
+    async def all(self, skip: int = 0, max: int = 100) -> List[User]:
         """Получить всех пользователей"""
-        query = self.db.query(User)
-        return query.offset(skip).limit(max).all()
+        q = await self.db.execute(select(User).order_by(User.id))
+        return q.scalars().all()
 
-    def edit(self, user_id: str, atribut: str, value: Any):
+    async def edit(self, user_id: UUID, atribut: str, value: Any):
         """Изменение полей данных"""
         atr = getattr(User, atribut)
         if getattr(User, atribut):
             try:
-                query = (
-                    self.db.query(User)
-                    .filter(User.id == user_id)
-                    .update({atr: value}, synchronize_session=False)
-                )
-                # self.db.add(query)
-                self.db.commit()
+                q = update(User).where(User.id == user_id).values(atr=value)
+                q.execution_options(synchronize_session="fetch")
+                await self.db.execute(q)
+                await self.db.commit()
             except SQLAlchemyError:
-                self.db.rollback()
-                return {"error": "error"}
+                print("err")
+                await self.db.rollback()
+                return {"db error": "error"}
             return True
         else:
-            return False
+            return {"atribut": False}
 
-    def create(self, user: schema.User) -> User:
+    async def create(self, user: schema.User) -> User:
         """Создание пользователя"""
-
         try:
-            # Переносим все поля модели pydantic в модель пользователя
-            # Правда работать это будет пока не добавим пароли
             db_user = User(**user.dict())
-
             self.db.add(db_user)
-            self.db.commit()
-            self.db.refresh(db_user)
+            await self.db.commit()
+            await self.db.flush()
             logger.debug(f"create User: {db_user}")
         except Exception as e:
             logger.error(f"errr-{e}", {"error": user})
 
         logger.debug("success")
         return db_user
+
+
+# class UserReposytorySSE():
+#     db =

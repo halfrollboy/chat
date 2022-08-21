@@ -7,45 +7,67 @@ from uuid import UUID
 from fastapi.params import Depends
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
-
+from uuid import UUID
 from models.postgres.pg_models import Message
 import models.pydantic.message as schema
 from db.postgres.dependencies import get_db
 from loguru import logger
+
+from sqlalchemy import select, update, delete
 
 
 class MessageRepository:
     def __init__(self, db: Session = Depends(get_db)):
         self.db = db
 
-    def find(self, id: int) -> Message:
+    async def find(self, id: UUID) -> Message:
         """Поиск компании по id"""
-        query = self.db.query(Message)
-        return query.filter(Message.message_id == id).first()
+        message = await self.db.get(Message, {"id": id})
+        return message
 
-    def find_all_by_chat_id(self, chat_id: UUID):
-        """Поиск компании по email"""
-        query = self.db.query(Message)
-        return query.filter(Message.chat_id == chat_id).all()
+    async def get_message_with_chat(self, message_id: int, chat_id: UUID):
+        message = await self.db.get(
+            Message, {"message_id": message_id, "chat_id": chat_id}
+        )
+        return message
 
-    def all(self, skip: int = 0, max: int = 100) -> List[Message]:
+    async def get_messages_by_chat_id(self, chat_id: UUID) -> List[Message]:
+        """Получить все сообщения из чата"""
+        q = await self.db.execute(select(Message).where(Message.chat_id == chat_id))
+        return q.fetchall()
+
+    async def all(self, skip: int = 0, max: int = 100) -> List[Message]:
         """Получить все сообщения"""
-        query = self.db.query(Message)
-        return query.offset(skip).limit(max).all()
+        q = await self.db.execute(select(Message))
+        return q.scalars().all()
 
-    def create(self, message: schema.MessageBase) -> Message:
+    async def create(self, message: schema.MessageBase) -> Message:
         """Создание сообщения"""
         try:
             db_messaeg = Message(**message.dict())
 
-            self.db.add(db_messaeg)
-            self.db.commit()
-            self.db.refresh(db_messaeg)
+            await self.db.add(db_messaeg)
+            await self.db.commit()
+            await self.db.refresh(db_messaeg)
             logger.debug(f"message {db_messaeg}")
             return db_messaeg
         except Exception as e:
             logger.error(
                 {
-                    "error": e,
+                    "create error": e,
                 }
             )
+
+    async def delete_message_from_chat(self, chat_id: UUID, message_id: int):
+        """Удаление сообщения из чата"""
+        try:
+            q = delete(Message).where(
+                Message.message_id == message_id, Message.chat_id == chat_id
+            )
+            q.execution_options(synchronize_session="fetch")
+            await self.db.execute(q)
+            await self.db.commit()
+            return "ok"
+        except Exception as e:
+            logger.error({"error": e, "chat-user": chat_id})
+        return "false"

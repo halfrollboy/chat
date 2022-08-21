@@ -10,7 +10,6 @@ from uuid import UUID
 class BrokerRepository:
     def __init__(self):
         self.consumer = None
-        # self.produser = None
 
     async def connect_to_broker(self):
         await Rabbit.connect()

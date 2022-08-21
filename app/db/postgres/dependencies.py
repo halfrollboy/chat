@@ -2,16 +2,18 @@ from functools import lru_cache
 
 from . import config
 from . import database
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# Вызывается во время внедрения зависимости
-def get_db() -> Session:
+# TODO будет переписано после отладки
+async def get_db() -> AsyncSession:
     db = database.SessionLocal()
+    print("CON DB Session")
     try:
         print("CON DB")
         yield db
     finally:
-        db.close()
+        print("final")
+        await db.close()
 
 
 # Возврат существующего экземпляра DBSettings вместо создания нового

@@ -1,5 +1,5 @@
 from dataclasses import Field
-from datetime import datetime
+from datetime import datetime, date
 from uuid import UUID
 from pydantic import BaseModel
 from enum import Enum
@@ -17,7 +17,7 @@ class UserBase(BaseModel):
     lastname: str
     middlename: str | None
     gender: GenderType
-    birthday: datetime
+    birthday: date
     photo_uri: str
 
     class Config:

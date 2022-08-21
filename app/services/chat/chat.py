@@ -1,6 +1,8 @@
+from email import message
 from typing import List
 from fastapi.params import Depends
 from db.rabbitmq.broker import get_broker, BrokerRepository
+from uuid import UUID
 
 # Репозитории
 from repositories.user import UserRepository
@@ -8,7 +10,7 @@ from repositories.chat import ChatRepository
 from repositories.message import MessageRepository
 
 # Модели PG
-from models.postgres.pg_models import Chat as ChatModel
+from models.postgres.pg_models import Chat as ChatModel, Message
 
 # Схемы данных
 from models.pydantic.chat import Chat as schema_chat, ChatCreate
@@ -22,16 +24,12 @@ class Chat:
     удобно читаемый код, как простой текст
     """
 
-    def __init__(
-        self,
-        broker: BrokerRepository = Depends(get_broker),
-        users: UserRepository = Depends(),
-        chat: ChatRepository = Depends(),
-        message: MessageRepository = Depends(),
-    ):
+    users = UserRepository()
+    chat = ChatRepository()
+    message = MessageRepository()
+
+    def __init__(self, broker: BrokerRepository = Depends(get_broker)):
         self.broker = broker
-        self.users = users
-        self.chat = chat
 
     async def user_online(self, user_id):
         """
@@ -47,7 +45,6 @@ class Chat:
         for exchange in user_chats:
             await self.broker.bind_queue_to_exchange(user_id, exchange)
         # передаём не вызванную ф-цию чтобы можно было её вызвать
-        # ХИТРЫЙ ТЕСТ ПЕРЕДАЧИ ТЕЛА Ф-ЦИИ НАПРЯМУЮ :)
         return self.broker.wait_messaging()
 
     async def create_chat(self, chat: ChatCreate):
@@ -59,6 +56,34 @@ class Chat:
         self.chat.create_group_chat(chat)
         exchange = await self.broker.create_exchange(chat.chatname)
         await self.broker.bind_queue_to_exchange(chat.participants, exchange)
+        return "ok"
 
-    # def get_all_chats(self) -> List[ChatModel]:
+    async def check_name_is_free(self, name: str) -> bool:
+        """
+        Проверка на доступность имени
+        Поиск только по групповым чатам
+        """
+        mass = await self.chat.find_chat_name(name)
+        if len(mass) > 0:
+            return False
+        return True
+
+    async def mute_chat(self, user_id: UUID, chat_id: UUID):
+        """Мьютим чат для пользователя"""
+        await self.chat.mute_chat(user_id=user_id, chat_id=chat_id)
+
+    async def get_messages_from_chat(self, chat_id: UUID) -> List[Message]:
+        """Получаем все сообщения из чата"""
+        await self.message.get_messages_by_chat_id(chat_id=chat_id)
+
+    # def get_all_chats(self) -s> List[ChatModel]:
     #     return self.chat.all()
+
+    # async def delete_user_from_chat(self, chat_id: UUID, message_id: UUID) -> Message:
+
+    # await self.message.find()
+
+    async def add_user_to_chat(self):
+        """Приглашение пользователя по инвайту"""
+        #
+        pass
