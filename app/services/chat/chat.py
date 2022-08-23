@@ -24,12 +24,11 @@ class Chat:
     удобно читаемый код, как простой текст
     """
 
-    users = UserRepository()
-    chat = ChatRepository()
-    message = MessageRepository()
-
     def __init__(self, broker: BrokerRepository = Depends(get_broker)):
         self.broker = broker
+        self.users = UserRepository()
+        self.chat = ChatRepository()
+        self.message = MessageRepository()
 
     async def user_online(self, user_id):
         """

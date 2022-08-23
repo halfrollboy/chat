@@ -74,7 +74,7 @@ async def get_message(
 @router_chat.post("/chat/{chat_id}/leave")
 async def leave_chat(chat_id: UUID = Path(...), chats: ChatRepository = Depends()):
     user_id = "4ea558c3-dbbc-44f4-8a51-c58dbe962275"
-    chats.leave_from_chat(chat_id=chat_id, user_id=user_id)
+    return await chats.leave_from_chat(chat_id=chat_id, user_id=user_id)
 
 
 @router_chat.post("/chat/{chat_id}/join")
