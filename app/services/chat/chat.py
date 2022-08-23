@@ -52,7 +52,9 @@ class Chat:
             self.chat.create_personal_chat(
                 *chat.participants, schema_chat(type="personal")
             )
-        self.chat.create_group_chat(chat)
+        resp = await self.chat.create_group_chat(chat)
+        print(self.broker)
+        print(chat.chatname)
         exchange = await self.broker.create_exchange(chat.chatname)
         await self.broker.bind_queue_to_exchange(chat.participants, exchange)
         return "ok"

@@ -42,10 +42,10 @@ class ChatRepository:
             await self.db.add(db_chat)
             await self.db.commit()
             await self.db.refresh(db_chat)
+            logger.debug(f"Add Chat {db_chat}")
         except Exception as e:
-            logger.error({"error": e, "chat_obj": db_chat, "data request": chat})
-        logger.debug(f"Add Chat {db_chat}")
-        return db_chat
+            logger.error({"error": e, "data request": chat})
+        # return db_chat
 
     async def find_user_chats(self, user_id: uuid.UUID) -> List[Chat]:
         """Получить все чаты пользователя"""
