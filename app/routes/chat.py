@@ -2,7 +2,7 @@
 # from time import sleep
 # import uvicorn
 from plistlib import UID
-from fastapi import FastAPI, APIRouter, Depends
+from fastapi import FastAPI, APIRouter, Depends, Query, Path
 from sse_starlette import EventSourceResponse
 from repositories.chat import ChatRepository
 from repositories.message import MessageRepository
@@ -12,7 +12,7 @@ from uuid import UUID
 from pydantic import parse_obj_as
 from typing import List
 from models.pydantic.chat import Chat, ChatBase, ChatCreate
-
+from datetime import datetime
 from services.chat.chat import Chat as ChatService
 
 
@@ -35,56 +35,70 @@ async def get_list_chats(
 
 
 @router_chat.post("/{chat_id}/message/{message_id}/delete")
-async def delete_message_from_chat(chat_id: UUID, message_id: int):
-    return_msg = await chat_service.delete_message_from_chat(
+async def delete_message_from_chat(
+    chat_id: UUID = Path(...),
+    message_id: int = Path(...),
+    message_rep: MessageRepository = Depends(),
+):
+    return_msg = await message_rep.delete_message_from_chat(
         chat_id=chat_id, message_id=message_id
     )
     return return_msg
 
 
 @router_chat.get("/chat/{chat_id}/info")
-async def get_chat_info(chat_id):
-
-    return
+async def get_chat_info(chat_id: UUID = Path(...), chats: ChatRepository = Depends()):
+    info = await chats.find_group_info(chat_id=chat_id)
+    return info
 
 
 @router_chat.post("/chat/{chat_id}/info/edit")
-async def edit_chat_info(chat_id):
+async def edit_chat_info(chat_id: UUID = Path(...)):
     pass
 
 
 @router_chat.get("/chat/{chat_id}/messages")
-async def get_chat_messages(chat_id):
+async def get_chat_messages(chat_id: UUID = Path(...)):
     return await chat_service.get_messages_from_chat(chat_id=chat_id)
 
 
 @router_chat.get("/chat/{chat_id}/message/{message_id}")
 async def get_message(
-    chat_id: UUID, message_id: int, messages: MessageRepository = Depends()
+    chat_id: UUID = Path(...),
+    message_id: int = Path(...),
+    messages: MessageRepository = Depends(),
 ):
     return await messages.get_message_with_chat(chat_id=chat_id, message_id=message_id)
 
 
 @router_chat.post("/chat/{chat_id}/leave")
-async def leave_chat(chat_id):
-    pass
+async def leave_chat(chat_id: UUID = Path(...), chats: ChatRepository = Depends()):
+    user_id = "4ea558c3-dbbc-44f4-8a51-c58dbe962275"
+    chats.leave_from_chat(chat_id=chat_id, user_id=user_id)
 
 
 @router_chat.post("/chat/{chat_id}/join")
-async def join_to_chat(chat_id, chats: ChatRepository = Depends()):
+async def join_to_chat(chat_id: UUID = Path(...), chats: ChatRepository = Depends()):
     """Пользователь добавляется сам"""
     user_id = "4ea558c3-dbbc-44f4-8a51-c58dbe962275"
     return await chats.add_user_to_chat(chat_id=chat_id, user_id=user_id)
 
 
 @router_chat.post("/chat/{chat_id}/add/user/{user_id}")
-async def add_user(chat_id: UUID, user_id: UUID, chats: ChatRepository = Depends()):
+async def add_user(
+    chat_id: UUID = Path(...),
+    user_id: UUID = Path(...),
+    chats: ChatRepository = Depends(),
+):
+    """Добавить пользовател в групповой чат"""
     return await chats.add_user_to_chat(chat_id=chat_id, user_id=user_id)
 
 
 # TODO что возвращаем
 @router_chat.post("/chat/{chat_id}/add/user/{user_id}")
-async def add_user(chat_id, user_id, chats: ChatRepository = Depends()):
+async def add_user(
+    chat_id: UUID = Path(...), user_id=Path(...), chats: ChatRepository = Depends()
+):
     return await chats.add_user_to_chat(chat_id=chat_id, user_id=user_id)
 
 
@@ -94,7 +108,11 @@ async def remove_user(chat_id: UUID, user_id: UUID, chats: ChatRepository = Depe
 
 
 @router_chat.post("/chat/{chat_id}/mute")
-async def mute_chat(chat_id: UUID, chats: ChatRepository = Depends()):
+async def mute_chat(
+    chat_id: UUID,
+    time: datetime = Query(None, description="Используется для блокировки на время"),
+    chats: ChatRepository = Depends(),
+):
     user_id = "4ea558c3-dbbc-44f4-8a51-c58dbe962275"
     return await chats.mute_chat(chat_id=chat_id, user_id=user_id)
 
@@ -102,7 +120,9 @@ async def mute_chat(chat_id: UUID, chats: ChatRepository = Depends()):
 # TODO не нашёл в базе
 @router_chat.post("/chat/{chat_id}/message/{message_id}/read")
 async def read_message(
-    chat_id: UUID, message_id: int, chats: ChatRepository = Depends()
+    chat_id: UUID = Path(...),
+    message_id: int = Path(...),
+    chats: ChatRepository = Depends(),
 ):
     # Записываем id последнего прочитанного сообщения
     user_id = "4ea558c3-dbbc-44f4-8a51-c58dbe962275"
@@ -124,5 +144,7 @@ async def create_chat(create: ChatCreate):
 
 
 @router_chat.get("/chat/{chat_id}/info/attachments")
-def get_attachments(chat_id, limit, offset, categories):
-    pass
+async def get_attachments(
+    chat_id: UUID = Path(...), messages_rep: MessageRepository = Depends()
+):
+    return await messages_rep.get_attachemnts_unic(chat_id=chat_id)

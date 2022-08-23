@@ -1,4 +1,5 @@
 from datetime import datetime
+from re import U
 from typing import List
 import uuid
 
@@ -33,7 +34,6 @@ class ChatRepository:
         q = await self.db.execute(select(Chat))
         return q.scalars().all()
 
-    # TODO Пересмотреть создание чатика
     async def create(self, chat: ChatBase) -> Chat:
         """Создание простого chata"""
         try:
@@ -101,13 +101,19 @@ class ChatRepository:
         try:
             for participant in chat.participants:
                 participant_users.append(
-                    ChatUser(chat_id=created_chat.id, user_id=participant)
+                    GroupChat(chat_id=created_chat.id, **chat),
+                    ChatUser(chat_id=created_chat.id, user_id=participant),
                 )
                 await self.db.add_all(participant_users)
                 await self.db.commit()
         except Exception as e:
             # TODO переписать на перехват ошибки, которую возвращает база
             logger.error({"error": e, "ChatUser": participant_users})
+
+    async def find_group_info(self, chat_id: uuid.UUID):
+        """Поиск информации групповых чатов"""
+        q = await self.db.execute(select(GroupChat).where(GroupChat.id == chat_id))
+        return q.fetchall()
 
     async def find_chat_name(self, name):
         """Найти имя чата"""
@@ -118,7 +124,7 @@ class ChatRepository:
         self,
         user_id: uuid.UUID,
         chat_id: uuid.UUID,
-        time: None,
+        time: datetime = None,
     ):
         """Мутим сообщения из чата"""
         if time == None:
@@ -144,7 +150,7 @@ class ChatRepository:
             return {"db error": "error"}
         return True
 
-    async def leave_from_chat(self, chat_id: uuid.UUID, user_id: int):
+    async def leave_from_chat(self, chat_id: uuid.UUID, user_id: uuid.UUID):
         """Выход из чата
         С возможностью вернуться
         """

@@ -8,7 +8,7 @@ from fastapi.params import Depends
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from uuid import UUID
-from models.postgres.pg_models import Message
+from models.postgres.pg_models import Message, Attachment
 import models.pydantic.message as schema
 from db.postgres.dependencies import get_db
 from loguru import logger
@@ -71,3 +71,15 @@ class MessageRepository:
         except Exception as e:
             logger.error({"error": e, "chat-user": chat_id})
         return "false"
+
+    async def get_attachemnts_unic(self, chat_id: UUID) -> Attachment:
+        """Получени уникальных attachments из чата"""
+        sql = """with reco as (
+            SELECT distinct unnest(attachments) item_attach
+            FROM messages item
+            where chat_id = '{}'
+            )
+            select * from reco
+            join attachments att on att.attachment_id = item_attach""".format(chat_id)
+        query = await self.db.execute(sql)
+        return query.fetchall()
