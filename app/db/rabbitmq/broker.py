@@ -38,12 +38,18 @@ class BrokerRepository:
         self, queues: str | List[UUID], exchange: str | List[str]
     ):
         """Биндим пользователей к чату"""
-        if type(exchange) == type(""):
+        print(queues, exchange)
+        if type(exchange) != str:
+
             for q in queues:
-                self.consumer.bind_queue_to_exchange(queue_name=q, exchange=exchange)
+                await self.consumer.bind_queue_to_exchange(
+                    queue_name=str(q), exchange=exchange
+                )
         else:
             for e in exchange:
-                self.consumer.bind_queue_to_exchange(queue_name=q, exchange=e)
+                await self.consumer.bind_queue_to_exchange(
+                    queue_name=queues, exchange=e
+                )
 
     async def wait_messaging(self) -> str:
         """Ожидание получения сообщения"""

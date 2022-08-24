@@ -138,8 +138,8 @@ async def is_chatname_available(chatname: str, chats: ChatRepository = Depends()
 
 # TODO проверить
 @router_chat.post("/chat/create")
-async def create_chat(create: ChatCreate):
-    responce = await chat_service.create_chat(create)
+async def create_chat(create: ChatCreate, service: ChatService = Depends()):
+    responce = await service.create_chat(create)
     return responce
 
 

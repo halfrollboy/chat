@@ -1,6 +1,7 @@
 from email import message
 from typing import List
 from fastapi.params import Depends
+from fastapi import Depends as InitDepend
 from db.rabbitmq.broker import get_broker, BrokerRepository
 from uuid import UUID
 
@@ -24,11 +25,17 @@ class Chat:
     удобно читаемый код, как простой текст
     """
 
-    def __init__(self, broker: BrokerRepository = Depends(get_broker)):
+    def __init__(
+        self,
+        broker: BrokerRepository = Depends(get_broker),
+        users: UserRepository = InitDepend(UserRepository),
+        chat: ChatRepository = InitDepend(ChatRepository),
+        message: MessageRepository = InitDepend(MessageRepository),
+    ):
         self.broker = broker
-        self.users = UserRepository()
-        self.chat = ChatRepository()
-        self.message = MessageRepository()
+        self.users = users
+        self.chat = chat
+        self.message = message
 
     async def user_online(self, user_id):
         """
