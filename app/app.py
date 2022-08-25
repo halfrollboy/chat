@@ -2,12 +2,13 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi import Depends
 
 # from db.postgres.database import Model, engine
 from routes.sse import router_sse
 from routes.user import router_user
 from routes.chat import router_chat
+from services.chat.auth import auth_required
 
 # import os
 from loguru import logger
@@ -32,8 +33,8 @@ async def hello_world():
 
 
 @app.get("/ping")
-async def read_root():
-    return {"ping": "pong!"}
+async def read_root(token=Depends(auth_required)):
+    return {"ping": f"{token['sub']}"}
 
 
 # @router_user.get("/token")
